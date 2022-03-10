@@ -15,7 +15,7 @@ $ gcc -P -E 1-hello_world.c
 # Alternatively 
 $ cpp -P 1-hello_world.c
 
-# Compile 1-hello_world.c to generate an object file
+# Compile 1-hello_world.c to generate an object file, but don't link
 $ gcc -c 1-hello_world.c
 # Link the 1-hello_world.o from the previous command to generate a C program
 $ gcc 1-hello_world.o
