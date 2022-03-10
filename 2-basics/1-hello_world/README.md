@@ -5,25 +5,25 @@ A really simple C program
 ## Commands we used
 
 ```sh
-// Preprocess 1-hello_world.c
+# Preprocess 1-hello_world.c
 $ gcc -E 1-hello_world.c
-// Alternatively. `cpp` is the preprocessor
+# Alternatively. `cpp` is the preprocessor
 $ cpp 1-hello_world.c
 
-// Preprocess without line directives
+# Preprocess without line directives
 $ gcc -P -E 1-hello_world.c
-// Alternatively 
+# Alternatively 
 $ cpp -P 1-hello_world.c
 
-// Compile 1-hello_world.c to generate an object file
+# Compile 1-hello_world.c to generate an object file
 $ gcc -c 1-hello_world.c
-// Link the 1-hello_world.o from the previous command to generate a C program
+# Link the 1-hello_world.o from the previous command to generate a C program
 $ gcc 1-hello_world.o
 
-// Compile and link 1-hello_world.c to generate a C program
+# Compile and link 1-hello_world.c to generate a C program
 $ gcc 1-hello_world.c
 
-// See how complex stuff happens under the hood. We don't need to understand them.
+# See how complex stuff happens under the hood. We don't need to understand them.
 $ gcc -v 1-hello_world.c
 ```
 
