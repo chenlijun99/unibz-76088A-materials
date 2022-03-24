@@ -2,6 +2,8 @@
 
 Lecture materials for Embedded Systems Design and Implementation (76088A) course at UniBZ.
 
+Please also check out [FAQ.md](./FAQ.md), in which I will put some common problems and pitfalls that we meet during the course.
+
 ## Environment setup
 
 ### ESP32-C3 SDK
