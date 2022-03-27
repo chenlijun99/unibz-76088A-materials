@@ -1,0 +1,20 @@
+% Smaller font size for captions
+\usepackage[font=scriptsize]{caption}
+
+\author[Lijun Chen]{\texorpdfstring{Lijun Chen\newline\href{mailto:lijun.chen@kerr-italy.it}{lijun.chen@kerr-italy.it}}{Lijun Chen}}
+\institute[UniBZ]{Free University of Bozen-Bolzano}
+
+% This theme includes a decent footer
+\usetheme{Boadilla}
+
+% Logo positioning (at top right)
+% See https://latex-beamer.com/tutorials/logo-beamer/#allslides
+\usepackage{tikz}
+\logo{
+\begin{tikzpicture}[overlay,remember picture]
+% Aspect ratio of the figure is 1.25:1
+\node[xshift=-0.055\textwidth,yshift=-0.045\textwidth] at (current page.north east) {
+	\includegraphics[height=0.05\textwidth]{../common/assets/logo.png}
+};
+\end{tikzpicture}
+}
