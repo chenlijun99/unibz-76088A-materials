@@ -7,13 +7,14 @@ Goal: from a rough sketch of modular C code that doesn't compile, arrive to a pr
 **Initial considerations and takeaways:**
 
 * Concerning the `send` function:
-    * Arrays decay into pointers. Typically the size of the array is passed along.
-    * The `printf` is a [variadic function](https://en.cppreference.com/w/c/variadic). To my knowledge variadic functions always determine the variadic part of the arguments using the previous fixed arguments (e.g. `ioctl` is another example of such variadic function). In the case of printf-like functions, the fixed parameter is the format string. Further information on the format specifiers can be found at https://en.cppreference.com/w/cpp/io/c/fprintf.
+    * Arrays decay into pointers when passed to functions. Typically the size of the array is passed along to solve this problem.
+        * There are also cases where the programmer decides that the size doesn't need to be passed, if the array is guaranteed (or required by API contract) to have always a known fixed size.
+    * `printf` is a [variadic function](https://en.cppreference.com/w/c/variadic). To my knowledge variadic functions always determine the variadic part of the arguments using the previous fixed arguments (e.g. `ioctl` is another example of such variadic function). In the case of printf-like functions, the fixed parameter is the format string, which contain format specifiers as placeholders. For each format specifies, an argument of corresponding type must be passed. Further information on the format specifiers can be found at https://en.cppreference.com/w/cpp/io/c/fprintf.
         * In general it is important to make sure that the type of the argument and the type of the format specifier match. That's why we cast `buffer[i]` to `unsigned int`. We see a case of [type casting](https://en.cppreference.com/w/c/language/cast) in C (a.k.a. type conversion, type coercion, etc.).
             * Detail: actually in this case the cast is not necessary due to the default argument promotion of the variadic arguments. See C99, Paragraph 6.5.2.2.7.
-    * Relationship between array and pointers and the equivalence of the "subscript operator" with "pointer arithmetic + dereference". E.g. `a[i]` is equivalence to `*(arr + i)`.
+    * Relationship between array and pointers and the equivalence of the "subscript operator" with "pointer arithmetic + dereference". E.g. `a[i]` is equivalent to `*(arr + i)`.
 * Concerning the `get_current_temperature` function:
-    * An example of the use of the `scanf()` function to obtain input from the user.
+    * An example of the use of the `scanf()` function to obtain input from the user. It works similarly to `printf()`, i.e. it is a variadic function, it accepts a format string as first argument, the format string contains format specifiers, but tell `scanf()` about the variadic arguments.
 * Historically C did not have the boolean data type. `stdbool.h` was added in C99.
 * Use of fixed width integer types from `stdint.h` (since C99) for better portability. See more on [cppreference](https://en.cppreference.com/w/c/types/integer).
 
@@ -46,7 +47,7 @@ $ gcc main.c spi_bus.c temperature_sensor.c -pedantic-errors -std=c99
 
 * Prior to C99, functions could be used undeclared. The compilers would assume its type to be `int f()`, meaning that anything can be passed to it and it returns an `int`.
      * This behaviour has been removed in C99, but GCC issues only warnings rather than errors unless we use `-pedantic-errors`.
-     * Therefore, a empty parameter list in C does not mean that the function accepts no parameter. If means that the function accepts any parameter. To express that the function accepts no parameter (so that the compiler gives an error if you are erroneously passing a parameter), put `void` in parameter list.
+     * Therefore, an empty parameter list in C does not mean that the function accepts no parameter. If means that the function accepts any parameter. To express that the function accepts no parameter (so that the compiler gives an error if you are erroneously passing a parameter), put `void` in parameter list.
 
 ## 2
 
@@ -70,7 +71,7 @@ $ gcc main.c spi_bus.c temperature_sensor.c
 
 ```sh
 $ gcc main.c spi_bus.c temperature_sensor.c
-# Result: builds!
+# Result: builds successfully!
 ```
 
 **Takeaways:**
@@ -115,10 +116,10 @@ When we didn't initialize `is_idle`, what was its value?
             * Remember that we previously shown that we can use `static` to declare that an identifier shall have internal linkage? In C the meaning of `static` is overloaded: you use it on an identifier at file-scope, to specify its linkage; you use on an identifier that denotes an object (i.e. a variable) at block-scope, to specify its storage duration.
                 * Actually one more meaning was introduced in C99. See C99, Paragraph 6.7.5.3 if you are curious.
     * Objects with *automatic storage duration*:
+        * They are the so called *local variables*.
         * Their lifetime spans the block in which they are declared.
         * The value of an uninitialized object with automatic storage duration is indeterminate. Typically such objects are allocated in the *stack* and whatever is in the stack in that moment constitutes their initial value.
             * Why doesn't the C language define a known initial value? Because initializing an object has overhead, while the philosophy of C is: trust the programmers and don't make them pay for what they might not use.
-        * They are the so called *local variables*.
     * Objects with *allocated storage duration*:
         * Objects that reside in the so called *dynamic memory* or *heap*.
         * Their lifetime starts upon an allocation (e.g. via `malloc()`) and ends upon deallocation (via `free()`).
@@ -144,7 +145,7 @@ But why didn't the linker previously complain about the multiple definition of `
 
 * The difference between *declaration* and *definition*. See C99, Paragraph 6.7.5.
     * *A declaration specifies the interpretation and attributes of a set of identifiers.*. In other words a declaration tells the compiler: I'm using this identifier to refer to this kind of entity (an object with certain type, a function with certain signature, etc.), which may be "created" here or elsewhere.
-    * A definition is a special type of declaration that:
+    * A *definition* is a special type of declaration that:
         * for an object, causes storage to be reserved for that object;
         * for a function, includes the function body.
 * Indeed in step 2 and 3 we had the problem of multiple definitions because we were *defining* the functions. We didn't have problems of multiple definitions with `is_idle` and `error_number` because we only *declared* them.

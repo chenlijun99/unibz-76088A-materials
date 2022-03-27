@@ -45,7 +45,7 @@ $ ninja
 
 * As always [awesome-*](https://github.com/onqtam/awesome-cmake#resources) style repositories are quite awesome. You can find a lot of resources. Sorry, I didn't check the correctness of the linked materials, but if there is any contradiction between what I show and what you read, please tell me. It is an occasion for me to learn.
 * Look at the comments in [CMakeLists.txt](./1/CMakeLists.txt). 
-* CMake uses an out-of-source build, i.e. all the build artifacts are kept in a separate directory instead of alongside the source files. Advantages:
+* CMake uses an out-of-source build approach, i.e. all the build artifacts are kept in a separate directory instead of alongside the source files. Advantages:
     * Multiple build directories with different build configuration
         * We can use the [CMAKE_BUILD_TYPE](https://cmake.org/cmake/help/v3.5/variable/CMAKE_BUILD_TYPE.html] cache variable to control the type of the build. Most notably
             * `Debug` ensures that the code is compiled with debug symbols, which allow us to map the machine code back to the source code, making code stepping, breakpoint placement, etc., easier (similar to source maps in JavaScript).
@@ -54,7 +54,7 @@ $ ninja
 * For any project, at least one top-level `CMakeLists.txt` is needed. In the top-level `CMakeLists.txt` the commands `cmake_minimum_required` and `project` must be used.
 * Cache variables as persisted across CMake executions and typically serve as customization points for our build. 
     * We can pass the option `-D<VARIABLE_NAME>=<VARIABLE_VALUE>` to CMake to force setting a cache variable. We are basically changing some configuration of our build.
-        * Note that while the syntax is very similar to the option `-DMACRO[=<MACRO_VALUE>]` of `gcc`, they are completely different things.
+        * Note that while the syntax is very similar to the option `-DMACRO[=<MACRO_VALUE>]` of `gcc`, they are *completely different things, that operate on different levels, but that serve the same purpose: conditional build*.
 
 ## 2
 

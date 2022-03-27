@@ -21,20 +21,20 @@ $ gcc main.c spi_bus.c temperature_sensor.c
 
 **Takeaways:**
 
-* In C there is no concept of module (a proper module system has been introduced in C++ 20).
-* By using variables and functions with external linkage, we implicitly make them accessible from other translation units.
-* It is customary to use header files (which typically have the extension `.h`) and source files (which typically have the extension `.c`) to implement a module.
+* In C there is no concept of module (a proper module system has only been introduced in C++ 20).
+* By using variables and functions with external linkage, we implicitly make them accessible from other translation units, but in each translation unit in which these variables and functions need to be used, they need to be declared. This causes repetition, which is bad for maintainability.
+* It is customary to use header files (which typically have the extension `.h`) and source files (which typically have the extension `.c`) to implement a "module".
     * From a conceptual point of view:
         * Header files are files where the public interface of a module lies.
         * Source files are files where the implementation of a module lies.
     * Note that the `#include` preprocessor directive merely looks for the file and does a copy paste. The `.h` extension is just a convention. Following it may be good for your IDE, editor and other tooling to work well, but for the preprocessor any file works.
-* Difference between `#include ""` and `#include <>`. The first search for the header file first relative to the current directory, i.e. the directory of the file that contains the `#include` directive. If it cannot find the header file, the it falls back to the same behaviour of the second, which searches the header file in implementation defined paths (e.g. on Linux `gcc` looks also in `/usr/include/`). 
+* Difference between `#include ""` and `#include <>`. The first searches for the header file first relative to the current directory, i.e. the directory of the file that contains the `#include` directive. If it cannot find the header file, the it falls back to the same behaviour of the second, which searches the header file in implementation defined paths (e.g. on Linux `gcc` looks also in `/usr/include/`). 
 
 ## 2
 
 Now let's say we want to add a configuration to the initialization function of our temperature_sensor.
 
-**CHANGELOG:** Added a public configuration data structure to the `temperature_sensor` module. Passed an instance of the configuration to the in `main.c`.
+**CHANGELOG:** Added a public configuration data structure (using `struct`) to the `temperature_sensor` module. Passed an instance of the configuration `struct` in the call to the `temperature_sensor_init` function in `main.c`.
 
 Let's build.
 
@@ -47,9 +47,11 @@ $ gcc main.c spi_bus.c temperature_sensor.c
 
 * Defining user-defined data type using `struct`.
     * As with variables and functions, we put public data structures of a module in the header file.
-    * Use of the `.` member access operator to access the field of a `struct`. The same syntax can been seen in many other languages such as Java, JavaScript, Python, etc. to access the member of an object.
-* Passing const pointers as a way to avoid copy: C passes everything by value, but our `struct` may become quite big in future. We don't want to make an useless copy. 
-* Use of the conditional ternary operator.
+    * Use of the `.` member access operator to access the field of a `struct`. The same syntax is used in many other languages such as Java, JavaScript, Python, etc. to access the member of an object.
+* Passing const pointers as a way to avoid copy. C passes everything by value, but our `struct` may become quite big in future. We don't want to make an useless copy. But passing simply by pointer would mean that the function is free to modify the content of the variable passed by pointer. Passing by const pointer allow us to spare a copy but at the same time forbid the function from modify the content of the variable passed by pointer.
+    * This approach is typically used for `struct`s, which may become quite big, as more and more fields are added.
+    * This approach is not used for built-in types. Passing a variable by pointer still requires passing a pointer as value. E.g. on 32-bit architectures the size of a pointer is typically 4 bytes. An `int` also usually takes up 4 bytes. So passing a `int` by value has the same cost of passing a pointer.
+* Use of the conditional ternary operator (`<condition> ? <true expression> : <false expression>`), which is present always in many other languages (Java, JavaScript, etc.).
 
 ## 3
 
@@ -129,7 +131,7 @@ $ gcc -DCONFIGURATION_FAKE_NVM_DEFAULT_USE_FAHRENHEIT=0 main.c spi_bus.c tempera
     * Conditional compilation is useful to:
         * Reduce final executable size.
             * While, it is true that nowadays the compiler can perform some clever dead code elimination and the linker is able to drop functions and variables that are not used by anybody, there is still some limit in what they can do. Similar to how tree-shaking in modern web development.  
-            * With conditional compilation preprocessor directives we have fine grained control.
+            * With conditional compilation preprocessor directives we have more fine grained control on what to include in the compilation.
         * Especially on cross-platform programming, sometimes we must use conditional compilation because the functions that we use may not be available in other platforms. E.g.
 
         ```c
@@ -167,7 +169,7 @@ $ gcc -DCONFIGURATION_FAKE_NVM_DEFAULT_USE_FAHRENHEIT=0 main.c spi_bus.c tempera
 
 * Use of `assert()` from `assert.h` to verify conditions that must be true
     * Note: our example is actually not the most appropriate use case for `assert()`.
-* We see again an example of "treating" a variable like an byte array and just manipulate it. Is it really "okay" to just treat arbitrary objects as byte array? In other words, is it okay to directly work with the underlying binary representation of the data? Typically the answer is no. It's not portable. At least the following aspects are not universally "fixed". They may depend on architecture, optimization level, etc.
+* We see again an example of "treating" a variable like an byte array and just manipulate it. Previously, we also did that when calling the `spi_bus_send` function in `main.c`. Is it really "okay" to just treat arbitrary objects as byte array? In other words, is it okay to directly work with the underlying binary representation of the data? Typically the answer is no. It's not portable. At least the following aspects are not universally "fixed". They may depend on architecture, optimization level, etc.
     * [Signed number representations](https://en.wikipedia.org/wiki/Signed_number_representations)
     * [Data structure alignment](https://en.wikipedia.org/wiki/Data_structure_alignment)
     * [Endianness](https://en.wikipedia.org/wiki/Endianness)
@@ -180,6 +182,8 @@ $ gcc -DCONFIGURATION_FAKE_NVM_DEFAULT_USE_FAHRENHEIT=0 main.c spi_bus.c tempera
         * FlatBuffer.
 
 ## 5
+
+Our `configuration.c` has become quite bloated, with all the conditional compilation stuff that we introduced.
 
 **CHANGELOG:**: separated configuration.c into configuration_common.c configuration_fake_default.c, configuration_fake_file.c, and configuration_fake_user_input.c.
 
@@ -196,7 +200,7 @@ $ gcc main.c spi_bus.c temperature_sensor.c configuration_common.c configuration
 **Takeaways:**
 
 * A coarse-grained conditional compilation based on "choosing which file to compile" can be performed to reduce conditional compilation complexity.
-* There is no need to have 1-1 correspondence between header file and source file.
+* There is no need to have 1-1 correspondence between header file and source file. A header file, among the other things, just declares: "somewhere these functions and variables will be defined". The "somewhere" could be one source file, many source files, depending on the complexity of the implementation and on the preference of the programmer.
 
 ## 6
 
@@ -217,4 +221,4 @@ $ gcc main.c -Ispi_bus/ -Itemperature_sensor -Iconfiguration spi_bus/spi_bus.c t
 
 **Takeaways:**
 
-* With `gcc` we can use the `-I` option to add additional search paths for the `#include` directive
+* With `gcc` we can use the `-I` option to add additional search paths for the `#include` directive.
