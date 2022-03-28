@@ -116,7 +116,7 @@ date: March 16, 2022
 
 ## How does C compilation work? {.allowframebreaks}
 
-![C++ compilation process [Prog](https://commons.wikimedia.org/wiki/User:Prog), [C/C++ compilation process](https://commons.wikimedia.org/wiki/File:C++_compilation_process.svg), [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/legalcode)
+![C/C++ compilation process [Prog](https://commons.wikimedia.org/wiki/User:Prog), [C++ compilation process](https://commons.wikimedia.org/wiki/File:C++_compilation_process.svg), [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/legalcode)
 ](assets/C++_compilation_process.svg){height=80%}
 
 * The concept of *translation unit*: the unit of program text after preprocessing [@wg14/n1256C99StandardDraft2007, section 5.1.1.1].
