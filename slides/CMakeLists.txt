@@ -5,7 +5,6 @@ project(UniBZ-76088A-slides
 	NONE)
 
 function(ADD_SLIDE _DIRECTORY)
-	set(BEAMER_OUTPUT ${CMAKE_BINARY_DIR}/output/beamer/${_DIRECTORY}_handout.pdf)
 
 	set(COMMON_DEPENDENCIES
 		common/assets/logo.png
@@ -26,6 +25,7 @@ function(ADD_SLIDE _DIRECTORY)
 		--filter pandoc-citeproc
 		)
 
+	set(BEAMER_OUTPUT ${CMAKE_BINARY_DIR}/output/beamer/${_DIRECTORY}_handout.pdf)
 	add_custom_command(OUTPUT ${BEAMER_OUTPUT}
 		COMMAND pandoc -t beamer
 		-V classoption=handout
@@ -50,7 +50,7 @@ function(ADD_SLIDE _DIRECTORY)
 		)
 	add_custom_target(${_DIRECTORY}_beamer_slides ALL DEPENDS ${BEAMER_OUTPUT})
 
-	set(BEAMER_OUTPUT ${CMAKE_BINARY_DIR}/latex/${_DIRECTORY}.tex)
+	set(BEAMER_OUTPUT ${CMAKE_BINARY_DIR}/output/latex/${_DIRECTORY}.tex)
 	add_custom_command(OUTPUT ${BEAMER_OUTPUT}
 		COMMAND pandoc -t beamer
 		${COMMON_ARGS}
