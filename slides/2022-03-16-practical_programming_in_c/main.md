@@ -129,6 +129,7 @@ date: March 16, 2022
 
 * Let's look at example [2-modularity](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity). It will be a dense journey.
 * We mainly went to know about:
+    * ["Things" should be declared before being used](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/1-base/README.md#1).
     * [Linkage of identifiers](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/1-base/README.md#3).
     * [Storage duration](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/1-base/README.md#4) of objects and their lifetime.
     * [The difference between declaration and definition](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/1-base/README.md#4).
