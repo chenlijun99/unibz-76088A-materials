@@ -144,7 +144,7 @@ Let's look at example [2-modularity](https://github.com/chenlijun99/unibz-76088A
     * [Coarse conditional compilation using selective compilation](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/2-header_file/README.md#5).
 * [Risks of using the underlying binary representation of data. Use serialization/deserialization](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/2-header_file/README.md#4).
 * [Add additional include file search paths](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/2-header_file/README.md#6).
-* [Use of CMake](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/3-cmake/README.md).
+* [Use of CMake](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/3-cmake/README.md). See @scottProfessionalCMakePractical if you are interested in CMake.
 
 ### Rule of thumb for modular C
 
