@@ -6,6 +6,7 @@ Goal: from the result of the [previous step](../2-header-file/), arrive at a set
 
 Problems:
 
+* We've seen some flags that can be passed to the compiler `gcc` to influence its behaviour (`-c` to avoid from linking, `-I` to specify additional include paths, `-D` to define macros, etc.). But, what about the other compilers? I need an abstraction layer over the various compilers if I want my project to be buidable using different compiler (especially important in cross-platform programming).
 * I don't want to re-build all the translation units whenever I make even the tiniest change.
 
 We know that by passing the `-c` flag, we tell the compiler to compile the translation units, but not try to link them into an executable. So we can do this.

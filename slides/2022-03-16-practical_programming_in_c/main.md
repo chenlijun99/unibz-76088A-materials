@@ -129,12 +129,21 @@ date: March 16, 2022
 
 * Let's look at example [2-modularity](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity). It will be a dense journey.
 * We mainly went to know about:
-    * Linkage of identifiers.
-    * Storage duration of objects and their lifetime.
-    * The difference between declaration and definition.
+    * [Linkage of identifiers](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/1-base/README.md#3).
+    * [Storage duration](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/1-base/README.md#4) of objects and their lifetime.
+    * [The difference between declaration and definition](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/1-base/README.md#4).
         * The one definition rule.
+    * [Header files](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/2-header_file/README.md#1).
+    * [`struct`](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/2-header_file/README.md#2).
+    * [Header guards](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/2-header_file/README.md#3).
+    * Conditional compilation:
+        * [Using #if, #ifdef, etc.](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/2-header_file/README.md#4)
+        * [Coarse conditional compilation using selective compilation](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/2-header_file/README.md#5).
+    * [Risks of using the underlying binary representation of data. Use serialization/deserialization](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/2-header_file/README.md#4).
+    * [Add additional include file search paths](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/2-header_file/README.md#6).
+    * [Use of CMake](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/2-basics/2-modularity/3-cmake/README.md).
 
-### Rule of thumb
+### Rule of thumb for modular C
 
 * Put the public interface of a module in the module's header file
     * Use *header guards*
