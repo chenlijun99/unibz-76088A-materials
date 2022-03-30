@@ -34,7 +34,7 @@ But what if a header file is changed? Then I would need to re-compile all the so
 ```sh
 $ mkdir build
 $ cd build
-$ cmake -DCONFIGURATION_FAKE_IMPL="fake_user_input" ..
+$ cmake -DCONFIGURATION_FAKE_IMPL="user_input" ..
 $ make 
 
 # Use a different build system, ninja
@@ -47,8 +47,25 @@ $ ninja
 * As always [awesome-*](https://github.com/onqtam/awesome-cmake#resources) style repositories are quite awesome. You can find a lot of resources. Sorry, I didn't check the correctness of the linked materials, but if there is any contradiction between what I show and what you read, please tell me. It is an occasion for me to learn.
 * Look at the comments in [CMakeLists.txt](./1/CMakeLists.txt). 
 * CMake uses an out-of-source build approach, i.e. all the build artifacts are kept in a separate directory instead of alongside the source files. Advantages:
-    * Multiple build directories with different build configuration
-        * We can use the [CMAKE_BUILD_TYPE](https://cmake.org/cmake/help/v3.5/variable/CMAKE_BUILD_TYPE.html] cache variable to control the type of the build. Most notably
+    * Multiple build directories with different build configuration. For example:
+
+        ```sh
+        $ mkdir build-fake-user
+        $ cd build-fake-user
+        $ cmake -DCONFIGURATION_FAKE_IMPL="user_input" ..
+        $ make 
+
+        $ cd ..
+
+        $ mkdir build-fake-file
+        $ cd build-fake-file
+        $ cmake -DCONFIGURATION_FAKE_IMPL="file" ..
+        $ make 
+        ```
+        
+        Now, this example may be stupid, but there are some build configuration (e.g. `CMAKE_BUILD_TYPE`) that may cause the whole project to be re-compiled. So each time we switch, we have to rebuild everything.
+
+        * We can use the [CMAKE_BUILD_TYPE](https://cmake.org/cmake/help/v3.5/variable/CMAKE_BUILD_TYPE.html) cache variable to control the type of the build. Most notably
             * `Debug` ensures that the code is compiled with debug symbols, which allow us to map the machine code back to the source code, making code stepping, breakpoint placement, etc., easier (similar to source maps in JavaScript).
             * `Release` compiles with all the optimizations turned on.
     * Easier to work with version control. Typically build artifacts are not kept into version control (the basic idea is that anything that can be *generated* should not be put into version control). By having build artifacts in separate directories, it is trivial to just ignore those directories (e.g. add the directories in `.gitignore` if we use `git`).
@@ -66,8 +83,9 @@ Problem: as more and more modules are added to the application, having a single 
 **Takeaways:**
 
 * Look at the comments in [CMakeLists.txt](./2/CMakeLists.txt) and [CMakeLists.txt](./2/configuration/CMakeLists.txt).
+* Subdirectories can have their own `CMakeLists.txt`, which can be included from a parent directory using `add_subdirectory()`. For each sub-`CMakeLists.txt`, a new variable scope is created.
 * Static libraries as a way to group a set of object files.
-* Usage requirements and how their transitive propagation can be controlled using `PUBLIC/PRIVATE/INTERFACE` and `target_link_libraries`. See more [here](https://cmake.org/cmake/help/v3.5/manual/cmake-buildsystem.7.html#transitive-usage-requirements) .
+* Usage requirements and how their transitive propagation can be controlled using `PUBLIC/PRIVATE/INTERFACE` and `target_link_libraries`. See more [in the CMake documentation](https://cmake.org/cmake/help/v3.5/manual/cmake-buildsystem.7.html#transitive-usage-requirements).
     * Usage requirement: what should be passed to the preprocessor/compiler/linker for the correct build of a target (correct build of all the source files associated to it).
         * include directory to add to the compiler's (or better, preprocessor's) search paths: using [target_include_directories](https://cmake.org/cmake/help/v3.5/command/target_include_directories.html)
         * macros to be defined on command line: using [target_compile_definitions](https://cmake.org/cmake/help/v3.5/command/target_compile_definitions.html),
