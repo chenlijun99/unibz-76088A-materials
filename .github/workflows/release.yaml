@@ -15,7 +15,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build pandoc pandoc-citeproc texlive-latex-recommended texlive-pictures texlive-latex-extra librsvg2-bin
+          sudo apt-get install -y cmake ninja-build pandoc pandoc-citeproc texlive-latex-recommended texlive-pictures texlive-latex-extra librsvg2-bin latexmk
       - name: Generate slides
         run: |
           # I don't know why, but pandoc doesn't build using make. I have to use Ninja...
