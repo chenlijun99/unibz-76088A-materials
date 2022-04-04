@@ -18,4 +18,9 @@
 };
 \end{tikzpicture}
 }
+
+\makeatletter
+\AtBeginEnvironment{minted}{%
+  \def\verbatim@nolig@list{\do\`\do\,\do\'\do\-}}
+\makeatother
 \usepackage{minted}
