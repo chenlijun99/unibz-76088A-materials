@@ -136,54 +136,104 @@ date: March 30, 2022
 * Threads communicate by sharing memory.
 * Shared mutable memory + non deterministic execution interleaving => race conditions.
 
-## Locks {.allowframebreaks}
+## Critical sections
 
 * "The only way to solve concurrency-related problems is via localized sequential execution" - I don't know who said this. 
-* Localized sequential execution should happen whenever shared resources are accessed.
+    * Preemption at arbitrary location is problematic. We solve this by disabling preemption locally, in some places, whenever shared resources are modified. These places are called *critical sections*.
 * Critical sections:
     * In general, any piece of concurrent code that accesses shared resources is a critical section and should be protected.
-    * Often used to refer to a specific way to achieve a critical section by disabling interrupts.
-* Disable interrupts
-    * Should be as short as possible, to keep the system responsive.
+    * Often used to refer to a specific way to protect a critical section by disabling interrupts.
+        * E.g. vanilla FreeRTOS provides [taskENTER_CRITICAL() and taskEXIT_CRITICAL()](https://www.freertos.org/taskENTER_CRITICAL_taskEXIT_CRITICAL.html) for this.
+* *Locking* is used to protect critical sections.
+    * Many types,
+    * may reside at different levels of abstraction,
+    * but ultimately locks must be used somewhere to deal with preemptive concurrent execution.
 
-        ```c
-        disable_interrupt();
-        // long running computation
-        // in the meanwhile, interrupts arrive but are not serviced
-        // quite bad.
-        enable_interrupt();
-        ```
+## Disable interrupts
 
-* Atomic primitives (often hardware support)
-    * E.g. test and set
+* Should be as short as possible, to keep the system responsive.
 
-        ```c
-        // this code must execute atomically
-        bool test_and_set(bool *target) {
-            bool rv = *target;
-            *target = true;
-            return rv;
-        }
-        ```
+    ```c
+    disable_interrupt();
+    // Long running computation
+    // In the meanwhile, interrupts arrive but are not
+    // serviced. Quite bad.
+    enable_interrupt();
+    ```
+* Not possible on multicore systems.
+    * E.g. ESP32 (not ESP32-C3) is a dual-core SoC. For this reason ESP-IDF actually provides a modified version of FreeRTOS in which entering a critical section requires the use of a spin lock. See [here](https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32c3/api-guides/freertos-smp.html#critical-sections).
+
+## Atomic primitives
+
+* Primitives with perform two memory operations atomically.
+* E.g. test and set: atomically changes the state of a flag to true and returns the value it held before. 
+
+    ```c
+    // this code must execute atomically
+    bool test_and_set(bool *target) {
+        bool rv = *target;
+        *target = true;
+        return rv;
+    }
+    ```
+* Typically used to implement higher-level synchronization primitives.
+
+::: notes
+The two race examples we saw previously are all due to the fact that we perform at least two memory operations (specifically first read and then write), but a preemption may happen in the middle. If, with some mechanism (e.g. disabling interrupt or hardware support), we can ensure the atomicity of these two memory operations, then we have an atomic primitive, which is the basis of many other higher-level multithreaded synchronization primitives.
+:::
+
+## Spin lock {.fragile}
 
 * Spin locks: busy waiting using atomic primitives
-    
-    ```c
+
+    \begin{minted}[autogobble, fontsize=\scriptsize, escapeinside=||, frame=single]{c}
+    // flag shared among threads
+    bool lock = false;
+    \end{minted}
+
+    \begin{minted}[autogobble, fontsize=\scriptsize, escapeinside=||, frame=single, breaklines, highlightlines={3,5}]{c}
+    // body of a task
     do {
-        while (test_and_set(&lock)); /* do nothing */
+        while (test_and_set(&lock)); /* |{\bf take lock}|, or |{\bf busy wait}| until lock is available */
         /* critical section */
-        lock = false;
-        /* remainder section */
+        lock = false; /* |{\bf release lock}| */
+        /* remainder (non critical) section */
     } while (true);
+    \end{minted}
 
-    ```
+## Mutex {.fragile}
 
-* Mutex: blocking
+* Mutex: mutual exclusion via blocking, rather than busy waiting
+
+    * E.g. [FreeRTOS's Mutex API](https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32c3/api-reference/system/freertos.html#c.xSemaphoreCreateMutex).
+    * E.g. [3-blink/2-freertos, step 3](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/3-blink/3-freertos/3)
+* Pseudocode of simplistic implementation
+    \vspace{\baselineskip}
+    \begin{columns}
+        \begin{column}{0.45\textwidth}
+          \begin{minted}[autogobble, fontsize=\scriptsize, frame=single, breaklines, escapeinside=||]{c}
+          void mutex_lock(bool mutex) {
+              while (test_and_set(&mutex)) {
+                block(); // the thread yields control, rather than busying waiting
+              }
+          }
+          \end{minted}
+        \end{column}
+        \begin{column}{0.45\textwidth}
+          \begin{minted}[autogobble, fontsize=\scriptsize, frame=single, breaklines, escapeinside=||]{c}
+          void mutex_unlock(bool mutex) {
+            mutex = false;
+            unblock_others(); // wake up the blocked threads
+          }
+          \end{minted}
+        \end{column}
+    \end{columns}
 
 ### Busy waiting vs blocking
 
 * Busy waiting: I'm stay here and wait until it's ready.
 * Blocking: OS, wake me up when what I need is available.
+    * Typically, blocking is preferred as it doesn't waste CPU cycles uselessly.
 
 ## What makes an RTOS special?
 
