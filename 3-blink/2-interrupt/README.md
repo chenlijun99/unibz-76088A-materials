@@ -44,3 +44,15 @@ $ idf.py -B build-release flash monitor
     * In general a watchdog is a hardware module in the SoC that must be periodically "kicked", i.e. refreshed. If the refresh timeout expires, the watchdog typically resets the system (you can see it as a reboot). Watchdog is used as a last-resort escape hatch that restarts the system when for some reason the firmware is hung somewhere and doesn't "kick" it. Note that computers are still physical objects and can fail in very subtle ways. E.g. cosmic rays could flip a bit in your CPU registers/in your RAM and lead the execution of your program to an unknown place.
     * What we saw in this example is a watchdog that yells at us because our code is never yielding execution to other tasks, since we wait for `button_toggle_status` to change in a tight loop. We busy wait, rather than block on a OS primitive. Our code is monopolizing the CPU, causing starvation of other tasks.
     * See also [ESP-IDF documentation on watchdog](https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32c3/api-reference/system/wdts.html).
+
+## 2
+
+Problem: we know that, even with `volatile`, using `button_toggle_status` as synchronization mechanism between the interrupt and the task is not the correct thing to do. Furthermore, we're doing busy waiting and, as we have seen, this makes the watchdog angry. We have also learnt that semaphores are often used for synchronization.
+
+**CHANGELOG**: 
+
+* Substitute the shared `button_toggle_status` with a semaphore.
+
+**Takeaways**: 
+
+* Use of [binary semaphore API](https://www.freertos.org/Embedded-RTOS-Binary-Semaphores.html) of FreeRTOS to synchronize between interrupt handler and task.
