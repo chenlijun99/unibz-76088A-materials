@@ -118,3 +118,16 @@ You could try to move the definition of `name1` and `name2` out from `app_main`,
 You could also try to put a infinite loop at the end of `app_main`, so that `app_main` never finishes and `name1` and `name2` are never deallocated. It should work.
 
 Now it is working. Even if there is some interleaving of `printf`, we can see that we can properly insert inputs using `scanf()`. Indeed, if we tracked down the call stack, `scanf()` internally calls [`uart_read`](https://github.com/espressif/esp-idf/blob/8153bfe4125e6a608abccf1561fd10285016c90a/components/vfs/vfs_uart.c#L242-L275) and we can see that the UART operations are enclosed with `_lock_acquire_recursive` and `_lock_release_recursive`. So the shared UART resource is being protected using locks. That's why it works.
+
+## 3
+
+Problem: we want the change of RGB color to be picked only after all the three base colors are inserted. Furthermore, we want to avoid any kind of race conditions deriving from concurrently modifying shared data. We need to put access to the colors in `g_task_shared` in a critical section.
+
+**CHANGELOG**:
+
+* Use mutex to protect access to `g_task_shared`.
+
+**Takeaways**:
+
+* Use of the [mutex API](https://www.freertos.org/Real-time-embedded-RTOS-mutexes.html) of FreeRTOS to achieve mutual exclusion
+when accessing thread shared data.
