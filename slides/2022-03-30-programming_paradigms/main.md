@@ -3,7 +3,7 @@ title: Programming models for Embedded systems
 date: March 30, 2022
 ---
 
-# A refresher on operating systems and a quick look at FreeRTOS.
+# A refresher on operating systems [@tanenbaumModernOperatingSystems2015, section 2.3; @silberschatzOperatingSystemConcepts2018, chapter 6] and a quick look at FreeRTOS.
 
 ## I want to do this... *and* this..., *at the same time*
 
