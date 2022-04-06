@@ -75,9 +75,9 @@ date: March 30, 2022
 ```{=latex}
 \end{frame}
 \begin{frame}[fragile]{Example 1 - race conditions in tasks}
-    Assume: a = 0
+    Assume: \mintinline{c}{int a = 0} is a global variable shared among threads
 
-    \vspace{1cm}
+    \vspace{\baselineskip}
     \begin{columns}
         \begin{column}{0.45\textwidth}
           \begin{minted}[autogobble, fontsize=\scriptsize, frame=single, escapeinside=||]{c}
@@ -96,34 +96,46 @@ date: March 30, 2022
           \end{minted}
         \end{column}
     \end{columns}
-    \vspace{1cm}
+    \vspace{\baselineskip}
 
-    \only<2>{Output: a = 2}
-    \only<3>{Output: a = 1}
+    \only<2>{\textcolor{teal}{Happy path}}
+    \only<3>{\textcolor{red}{Buggy path, due to unexpected interleaving of execution}}
+
+    \only<2>{Output: \mintinline{c}{a == 2}}
+    \only<3>{Output: \mintinline{c}{a == 1}}
 \end{frame}
 ```
 
 ```{=latex}
 \begin{frame}[fragile]{Example 2 - race conditions with interrupt}
+    Context: to keep the system responsive (i.e. able to quickly handle other interrupts), interrupt handlers are kept as short as possible. Commonly, they (often called the top half) just signal that something happened (e.g. using a flag) and let the "normal code" (often called the bottom half) process the interrupt.
+
+    Assume: \mintinline{c}{bool interrupt_handled = true} is a global variable shared among task and interrupt handler
+
+    \vspace{\baselineskip}
     \begin{columns}
-        \begin{column}{0.45\textwidth}
-          \begin{minted}[autogobble, fontsize=\scriptsize, frame=single, escapeinside=||]{c}
+        \begin{column}{0.48\textwidth}
+          \begin{minted}[autogobble, fontsize=\scriptsize, frame=single, escapeinside=||, breaklines,]{c}
             // task
             while (1) {
-                if (!interrupt_handled) { |\only<2>{\textcolor{red}{1}}|
-                    interrupt_handled = true; |\only<2>{\textcolor{red}{3}}|
+                // busy wait for interrupts
+                if (!interrupt_handled) { |\only<2>{\textcolor{red}{2}}|
+                    interrupt_handled = true; |\only<2>{\textcolor{red}{4}}|
+                    // process the interrupt
                 }
             }
           \end{minted}
         \end{column}
-        \begin{column}{0.45\textwidth}
-          \begin{minted}[autogobble, fontsize=\scriptsize, frame=single, escapeinside=||]{c}
-            // interrupt
-            interrupt_handled = false; |\only<2>{\textcolor{red}{2}}|
+        \begin{column}{0.48\textwidth}
+          \begin{minted}[autogobble, fontsize=\scriptsize, frame=single, escapeinside=||, breaklines,]{c}
+            // interrupt handler
+
+            // signal that an interrupt occurred
+            interrupt_handled = false; |\only<2>{\textcolor{red}{1, 3}}|
           \end{minted}
         \end{column}
     \end{columns}
-    \vspace{1cm}
+    \vspace{\baselineskip}
 
     \only<2>{Result: lost one interrupt}
 \end{frame}
