@@ -247,6 +247,82 @@ The two race examples we saw previously are all due to the fact that we perform 
 * Blocking: OS, wake me up when what I need is available.
     * Typically, blocking is preferred as it doesn't waste CPU cycles uselessly.
 
+## Semaphores {.fragile .allowframebreaks}
+
+* So far we have seen using locks for *mutual exclusion*.
+* What if we want to control access to a resource that has multiple instances, slots, etc.?
+    * The classic [bounded-buffer producer-consumer problem](https://en.wikipedia.org/wiki/Producer%E2%80%93consumer_problem)
+* What if we want one concurrently executing code to wait for another concurrently executing code? We want them to *synchronize* with each other.
+    * We could perform busy-waiting, as we did in [3-blink/2-interrupt, step 1](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/3-blink/2-interrupt/1), but we know that busy-waiting in general should be avoided.
+* Semaphore is the answer to these use cases.
+    * E.g. FreeRTOS's Semaphore API: see [ESP-IDF FreeRTOS docs](https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32c3/api-reference/system/freertos.html#semaphore-api), [Vanilla FreeRTOS tutorial on Counting Semaphores](https://www.freertos.org/Real-time-embedded-RTOS-Counting-Semaphores.html), [Vanilla FreeRTOS tutorial on Binary Semaphores](https://www.freertos.org/Embedded-RTOS-Binary-Semaphores.html)
+    * E.g. [3-blink/2-interrupt, step 2](https://github.com/chenlijun99/unibz-76088A-materials/tree/main/3-blink/2-interrupt/2)
+* Pseudocode of simplistic implementation
+    \vspace{\baselineskip}
+
+    \begin{columns}
+        \begin{column}{0.90\textwidth}
+            \begin{minted}[autogobble, fontsize=\scriptsize, frame=single, breaklines, escapeinside=||]{c}
+              typedef struct {
+                  int value;
+                  struct process *list;
+              } semaphore;
+            \end{minted}
+        \end{column}
+    \end{columns}
+    \vspace{\baselineskip}
+    \begin{columns}
+        \begin{column}{0.45\textwidth}
+          \begin{minted}[autogobble, fontsize=\scriptsize, frame=single, breaklines, escapeinside=||]{c}
+            take(semaphore *S) {
+                S->value--;
+                if (S->value < 0) {
+                    add this process to S->list ;
+                    sleep();
+                }
+            }
+          \end{minted}
+        \end{column}
+        \begin{column}{0.45\textwidth}
+          \begin{minted}[autogobble, fontsize=\scriptsize, frame=single, breaklines, escapeinside=||]{c}
+            give(semaphore *S) {
+                S->value++;
+                if (S->value <= 0) {
+                    remove a process P from S->list;
+                    wakeup(P);
+                }
+            }
+          \end{minted}
+        \end{column}
+    \end{columns}
+
+* Depending on how a semaphore is initialized, can be used for:
+    * Resource management: initialized with $N$, where $N$ represents the number of instances.
+    * Event counting: initialized with 0.
+* What we've seen so far is also called *counting semaphore*.
+* A counting semaphore which counts up to 1 is called *binary semaphore*. Depending on how a semaphore is initialized, can be used for
+    * Mutual exclusion (similar to Mutex): when initialized with $1$, 
+    * Event signaling: when initialized with $0$.
+
+## Mutex vs Binary semaphore
+
+* Often a mutex has the concept of ownership.
+* A mutex that is locked by one thread must be unlocked by the same thread.
+    * OTOH A binary semaphore can be taken by one thread and given by another thread.
+* The concept of ownership of mutex makes possible to implement:
+    * Recursive mutex. E.g. [FreeRTOS Recursive Mutex](https://www.freertos.org/RTOS-Recursive-Mutexes.html).
+    * Mitigate priority inversion problem. E.g [FreeRTOS Mutex](https://www.freertos.org/Real-time-embedded-RTOS-mutexes.html).
+    * Etc. See [Wikipedia](https://en.wikipedia.org/wiki/Semaphore_%28programming%29#Semaphores_vs._mutexes).
+
+## Other useful primitives provided by FreeRTOS
+
+* [Queues](https://www.freertos.org/Embedded-RTOS-Queues.html): message queues that can be used to exchange arbitrary data in a thread-safe manner.
+    * Similar to [Go Buffered Channels](https://go.dev/tour/concurrency/3).
+* [Event bits](https://www.freertos.org/FreeRTOS-Event-Groups.html): lightweight and expressive synchronization mechanism.
+* [Task Notifications](https://www.freertos.org/RTOS-task-notifications.html): task synchronization without intermediary synchronization object (semaphore, event group, etc.).
+* [Software Timers](https://www.freertos.org/RTOS-software-timer.html)
+* Etc.
+
 ## What makes an RTOS special?
 
 * All what we have seen apply on operating systems in general. What makes an RTOS special?
