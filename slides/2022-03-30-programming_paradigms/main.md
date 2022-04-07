@@ -335,3 +335,266 @@ The two race examples we saw previously are all due to the fact that we perform 
     * Assign priorities correctly
     * Bound the length of critical sections
     * Bound the resource hold time
+
+# Alternate concurrency models
+
+## Why we use RTOS?
+
+* We need concurrency because we need to deal with multiple things at the same time. But, is RTOS the only way to achieve concurrency? No.
+* Then why we use FreeRTOS? Well... because many APIs of ESP-IDF are blocking and are tightly-coupled with FreeRTOS.
+* So, even if we don't have real-time requirements, the framework provided by ESP-IDF "encourage" us to use FreeRTOS.
+
+## Types of APIs
+
+* Synchronous: stay here and wait for the reply
+    * Busy waiting: I'll busy-wait until it becomes available and then reply you.
+        * E.g. [`adc1_get_raw()`](https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32c3/api-reference/peripherals/adc.html#_CPPv412adc1_get_raw14adc1_channel_t)
+    * Blocking: I'll sleep and when the OS tells me that the reply is available I'll reply you.
+        * E.g. `scanf()`, [`uart_read_bytes()`](https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32c3/api-reference/peripherals/uart.html#_CPPv415uart_read_bytes11uart_port_tPv8uint32_t10TickType_t), [`uart_write_bytes()`](https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32c3/api-reference/peripherals/uart.html#_CPPv416uart_write_bytes11uart_port_tPKv6size_t), [`spi_device_transmit()`](https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32c3/api-reference/peripherals/spi_master.html#_CPPv419spi_device_transmit19spi_device_handle_tP17spi_transaction_t), [`i2c_master_cmd_begin()`](https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32c3/api-reference/peripherals/i2c.html#_CPPv420i2c_master_cmd_begin10i2c_port_t16i2c_cmd_handle_t10TickType_t), etc.
+    * Non-blocking: I reply you with whatever is available. It can be nothing, some partial data or all you need. 
+        * You may want to poll (i.e. periodically check) me.
+        * E.g. [`gpio_get_level()`](https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32c3/api-reference/peripherals/gpio.html#_CPPv414gpio_get_level10gpio_num_t)
+* Asynchronous: You don't need to wait. I'll let you know.
+    * It can only be non-blocking.
+    * Note: the fact that I am able to carry out what requested and then let you know implies that I'm able to operate concurrently (not necessary using threads).
+    * E.g. [`gpio_isr_register()`](https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32c3/api-reference/peripherals/gpio.html#_CPPv417gpio_isr_registerPFvPvEPviP17gpio_isr_handle_t)
+    * E.g. Most JavaScript APIs are Asynchronous. `el.addEventListener("click", myCallback);`
+
+<!--## How a blocking API is typically implemented in ESP-IDF-->
+
+```{=latex}
+\end{frame}
+\begin{frame}{}
+    \begin{center}
+    \includegraphics[width=\textwidth,height=0.8\textheight]{assets/alan_cox.jpg}
+    \end{center}
+\end{frame}
+```
+
+## The main loop (a.k.a. super loop) {.fragile}
+
+\begin{columns}
+    \begin{column}{0.50\textwidth}
+        \begin{listing}[H]
+          \begin{minted}[autogobble, fontsize=\scriptsize, frame=single, escapeinside=||, breaklines]{c}
+            void task1() {
+                while (1) {
+                    // invoke some blocking APIs
+                }
+            }
+
+            void task2() {
+                while (1) {
+                    // invoke some blocking APIs
+                }
+            }
+
+            int main() {
+                create_task(task1);
+                create_task(task2);
+            }
+          \end{minted}
+        \caption{Concurrency using an RTOS}
+        \end{listing}
+    \end{column}
+    \begin{column}{0.50\textwidth}
+        \begin{listing}[H]
+          \begin{minted}[autogobble, fontsize=\scriptsize, frame=single, escapeinside=||, breaklines]{c}
+            void task1() {
+                // invoke some non-blocking APIs
+            }
+
+            void task2() {
+                // invoke some non-blocking APIs
+            }
+
+            int main() {
+                while (1) {
+                    task1();
+                    task2();
+                }
+            }
+          \end{minted}
+        \caption{Concurrency using a main loop}
+        \end{listing}
+    \end{column}
+\end{columns}
+
+* The main loop is an example of ***cooperative** concurrency*
+* Each task must not block and must return as quickly as possible.
+* The state of each task must be explicitly maintained.
+
+## The main loop - explicit state I {.fragile}
+
+\begin{listing}[H]
+  \begin{minted}[autogobble, fontsize=\scriptsize, frame=single, escapeinside=||, breaklines]{c}
+    void task1() {
+        while (1) {
+            read_sensor();
+            write_to_spi();
+        }
+    }
+  \end{minted}
+\caption{Pseudo code of task in main loop}
+\end{listing}
+
+## The main loop - explicit state III {.fragile}
+
+\begin{listing}[H]
+  \begin{minted}[autogobble, fontsize=\scriptsize, frame=single, escapeinside=||, breaklines]{c}
+    struct {
+        bool read_started;
+        bool read_finished;
+        bool write_started;
+    } state;
+    void task1() {
+        if (!state.read_started) {
+            start_read_sensor();
+            state.read_started = true;
+        }
+        if (state.read_started && !state.read_finished) {
+            // poll sensor
+            if (read_sensor_non_blocking() == finished) {
+                state.read_finished = true;
+            }
+        }
+        |$\ldots$|
+    }
+  \end{minted}
+\caption{Pseudo code of task in main loop}
+\end{listing}
+
+## The main loop - explicit state IIII {.fragile}
+
+\begin{listing}[H]
+  \begin{minted}[autogobble, fontsize=\scriptsize, frame=single, escapeinside=||, breaklines]{c}
+    struct {
+        bool read_started;
+        bool read_finished;
+        bool write_started;
+    } state;
+    void task1() {
+        |$\ldots$|
+        if (state.read_finished && !state.write_started) {
+            start_write_spi();
+            state.write_started = true;
+        }
+        if (state.write_started) {
+            // poll write status
+            if (write_spi_finished() == true) {
+                // Reset all the bytes of the state struct to zero. 
+                // I.e. reset all flags. So we can start over.
+                memset(&state, sizeof(state), 0);
+            }
+        }
+    }
+  \end{minted}
+\caption{Pseudo code of task in main loop}
+\end{listing}
+
+## The main loop - state machine {.fragile .allowframebreaks}
+
+* So far we have used a bunch of flags and keep the state and a bunch of if statements to determine the current state.
+* How can we be sure that we didn't forget to check some combinations of the flags?
+* How many combinations do we need to check?
+    * Upper bound: cartesian product of the domain of all the flags.
+    * Combinatorial explosion!
+* But not all the combinations are significant to the applications.
+    * Don't cares.
+* A more clean and systematic approach is to use state machines.
+
+\framebreak
+
+* Let's see an example of *state-driven* state machine.
+
+\begin{minted}[autogobble, fontsize=\tiny, frame=single, escapeinside=||, breaklines]{c}
+enum state {
+    INITIAL,
+    READING,
+    WRITING,
+} state;
+void task1() {
+    switch (state) {
+        case INITIAL: {
+            start_read_sensor();
+            state = READING;
+        } break;
+        case READING: {
+            // poll sensor
+            if (read_sensor_non_blocking() == finished) {
+                start_write_spi();
+                state = WRITING;
+            }
+        } break;
+        case WRITING: {
+            // poll write status
+            if (write_spi_finished() == true) {
+                state = INITIAL;
+            }
+        } break;
+        default: assert(0); // Unexpected state
+    }
+}
+\end{minted}
+
+## Event-driven instead of polling {.fragile .allowframebreaks}
+
+* Polling is a gentle busy-waiting, but it still wastes CPU cycles. 
+* It is possible to lose events with just polling. 
+    * E.g. If we poll on UART data register too slowly, we may lose some bytes (overrun error)
+* Rather than using synchronous non-blocking APIs and perform polling, we could use asynchronous APIs.
+
+\begin{minted}[autogobble, fontsize=\scriptsize, frame=single, escapeinside=||, breaklines]{c}
+void on_read();
+
+void on_written() {
+    read_sensor_isr(on_read);
+}
+
+void on_read() {
+    write_to_spi_isr(on_written);
+}
+
+int main() {
+    read_sensor_isr(on_read);
+}
+\end{minted}
+
+* Problems: we are using interrupts, we are again in the world on preemption and thus "vulnerable" to race conditions.
+* But, e.g. we write similar code in JavaScript, and yet we've never used mutexes, semaphore, etc.
+    * Because JavaScript puts every event into a queue and executes the callbacks sequentially, in a *event-loop*.
+
+        ```javascript
+        while (queue.waitForEvents()) {
+          queue.processNextEvent()
+        }
+    ```
+
+\framebreak
+
+* We already saw the typical two-phase interrupt handling: top-half and bottom-half.
+    * We want save that an interrupt was fired (top-half) and then later process the interrupt in the "normal" code (bottom-half).
+    * To save the fact that an interrupt fired, we could:
+        * Use a simple boolean flag. We risk losing events.
+        * Use more structured data, to restore additional context of the interrupt (e.g. received payload).
+        * etc.
+        * What is commonly used is an event queue.
+    * What is important is that access to such data (which is shared between normal code and interrupt handler) is performed in critical section.
+
+## Preemptive vs cooperative concurrency
+
+* Preemptive:
+    * Non-deterministic interleaving
+    * Better fit for CPU-bound applications
+        * Can interrupt a long running computation without its cooperation.
+* Cooperative
+    * Intuitive
+    * Better fit for IO-bound applications
+
+<!--## Are we really free from race conditions?-->
+
+<!--* Race conditions may manifest at different levels. -->
+<!--* Using cooperative concurrency we are free from memory level race conditions-->
+<!--* But there may be race conditions in the business logic of our application-->
+
+## Is state machine something we use because we don't use RTOS?
