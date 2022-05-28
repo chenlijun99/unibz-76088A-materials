@@ -122,6 +122,7 @@ void app_main(void)
     gpio_config_t io_conf={
         .intr_type=GPIO_INTR_DISABLE,
         .mode=GPIO_MODE_OUTPUT,
+        .pull_up_en=1,
         .pin_bit_mask=(1<<GPIO_HANDSHAKE)
     };
 
